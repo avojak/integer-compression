@@ -56,3 +56,7 @@ $ ./decompress gamma 101
 $ ./decompress gamma 11001
 5
 ```
+
+## Additional
+
+Here's a link to my blog post about the various encoding methods: https://blog.avojak.com/2019/09/08/integer-compression/
