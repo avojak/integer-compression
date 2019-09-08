@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+import argparse
+import math
+import sys
+
+int_size = sys.getsizeof(int())
+methods = ['binary', 'unary', 'gamma', 'delta']
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Compress an integer.')
+    parser.add_argument('method', metavar='M', type=str, nargs=1, choices=methods, help='the encoding method')
+    parser.add_argument('integer', metavar='N', type=check_positive, nargs=1, help='the integer to encode')
+    return parser.parse_args()
+
+def check_positive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
+
+def pad_binary(binary):
+    return binary.zfill(int_size)
+
+"""
+Simply the binary representation of the integer.
+"""
+def binary_compression(integer):
+    return "{0:b}".format(integer)
+
+"""
+The unary encoding (for x >= 1) is defined as x-1 one bits, followed by a 0.
+"""
+def unary_compression(integer):
+    return '1' * (integer - 1) + '0'
+
+"""
+The gamma encoding is defined as the unary encoding of 1+floor(log(x)), followed by the
+uniform encoding of x-2^floor(log(x)) represented in floor(log(x)) bits.
+"""
+def gamma_compression(integer):
+    unary = unary_compression(1 + math.floor(math.log2(integer)))
+    uniform = binary_compression(int(integer - math.pow(2, math.floor(math.log2(integer)))))
+    uniform = uniform.zfill(math.floor(math.log2(integer)))
+    return unary + uniform
+
+"""
+The delta encoding is defined as the gamma encoding of 1+floor(log(x)), followed by the
+uniform encoding of x-2^floor(log(x)) represented in floor(log(x)) bits.
+"""
+def delta_compression(integer):
+    gamma = gamma_compression(1 + math.floor(math.log2(integer)))
+    uniform = binary_compression(int(integer - math.pow(2, math.floor(math.log2(integer)))))
+    uniform = uniform.zfill(math.floor(math.log2(integer)))
+    return gamma + uniform
+
+def main():
+    args = parse_args()
+    integer = args.integer[0]
+    method = args.method[0]
+    if method == 'binary':
+        print(pad_binary(binary_compression(integer)))
+    elif method == 'unary':
+        print(unary_compression(integer))
+    elif method == 'gamma':
+        print(gamma_compression(integer))
+    elif method == 'delta':
+        print(delta_compression(integer))
+    else:
+        sys.exit('Unimplemented compression method: \"' + method + '\"')
+
+if __name__ == '__main__':
+    main()

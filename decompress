@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+
+import argparse
+import math
+import sys
+
+int_size = sys.getsizeof(int())
+methods = ['binary', 'unary', 'gamma', 'delta']
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Decompress an integer.')
+    parser.add_argument('method', metavar='M', type=str, nargs=1, choices=methods, help='the encoding method used')
+    parser.add_argument('compressed', metavar='C', type=str, nargs=1, help='the encoded integer to decode')
+    return parser.parse_args()
+
+"""
+Simply convert from binary to decimal.
+"""
+def binary_decompression(compressed):
+    try:
+        return int(compressed, 2)
+    except ValueError:
+        sys.exit('Invalid binary encoding: \"' + compressed + '\"')
+
+"""
+Count the number of ones until reaching a zero.
+"""
+def unary_decompression(compressed):
+    num_ones = 0
+    for bit in compressed:
+        if bit == '1':
+            num_ones = num_ones + 1
+        elif bit == '0':
+            if len(compressed) != num_ones + 1:
+                sys.exit('Invalid unary encoding: \"' + compressed + '\"')
+            return num_ones + 1
+        else:
+            sys.exit('Invalid unary encoding: \"' + compressed + '\"')
+    sys.exit('Invalid unary encoding: \"' + compressed + '\"')
+
+"""
+First decode the unary part and call it k+1. Then read k more bits, decode it as binary, and call it r.
+The final value is (2^k)+r
+"""
+def gamma_decompression(compressed):
+    zero_loc = compressed.index('0')
+    k = unary_decompression(compressed[:zero_loc + 1]) - 1
+    r = binary_decompression(compressed[zero_loc + 1:zero_loc + 1 + k])
+    return int(math.pow(2, k)) + r
+
+"""
+First decode the unary part of the gamma part and call it k+1. Then read k more bits, decode it as binary
+and call it r. The value of the gamma part is (2^k)+r, call it m+1. Then read m more bits, decode it as
+binary and call it s. The final value is (2^m)+s.
+"""
+def delta_decompression(compressed):
+    zero_loc = compressed.index('0')
+    k = unary_decompression(compressed[:zero_loc + 1]) - 1
+    r = binary_decompression(compressed[zero_loc + 1:zero_loc + 1 + k])
+    m = (int(math.pow(2, k)) + r) - 1
+    s = binary_decompression(compressed[zero_loc + 1 + k:zero_loc + 1 + k + m])
+    return int(math.pow(2, m)) + s
+
+def main():
+    args = parse_args()
+    compressed = args.compressed[0]
+    method = args.method[0]
+    if method == 'binary':
+        print(binary_decompression(compressed))
+    elif method == 'unary':
+        print(unary_decompression(compressed))
+    elif method == 'gamma':
+        print(gamma_decompression(compressed))
+    elif method == 'delta':
+        print(delta_decompression(compressed))
+    else:
+        sys.exit('Unimplemented compression method: \"' + method + '\"')
+
+if __name__ == '__main__':
+    main()
